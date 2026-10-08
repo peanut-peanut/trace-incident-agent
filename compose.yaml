@@ -1,0 +1,32 @@
+services:
+  postgres:
+    image: postgres:16-bookworm
+    environment:
+      POSTGRES_USER: trace
+      POSTGRES_DB: trace
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-local-demo-change-before-sharing}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trace -d trace"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+  app:
+    build: .
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      APP_MODE: ${APP_MODE:-demo}
+      DATABASE_URL: postgresql+psycopg://trace:${POSTGRES_PASSWORD:-local-demo-change-before-sharing}@postgres:5432/trace
+      CHECKPOINT_URL: postgresql://trace:${POSTGRES_PASSWORD:-local-demo-change-before-sharing}@postgres:5432/trace
+      LLM_PROVIDER: ${LLM_PROVIDER:-generic}
+      LLM_BASE_URL: ${LLM_BASE_URL:-}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-}
+      CONSOLE_TOKEN: ${CONSOLE_TOKEN:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+volumes:
+  postgres-data:
